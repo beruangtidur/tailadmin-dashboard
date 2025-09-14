@@ -1,4 +1,3 @@
-import { SessionProvider } from "next-auth/react";
 
 export default function FullWidthPageLayout({
   children,
@@ -6,8 +5,6 @@ export default function FullWidthPageLayout({
   children: React.ReactNode;
 }) {
   return (
-    <SessionProvider>
-      <div>{children}</div>;
-
-    </SessionProvider >)
+    <div>{children}</div>
+  )
 }
