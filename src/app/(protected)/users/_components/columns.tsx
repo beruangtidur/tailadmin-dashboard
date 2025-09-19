@@ -1,7 +1,7 @@
 "use client"
 
 import { ColumnDef } from "@tanstack/react-table"
-import { ArrowUpDown, Edit, KeyRound, Trash2 } from "lucide-react"
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react"
 // This type is used to define the shape of our data.
 // You can use a Zod schema here if you want.
 export type Users = {
@@ -14,8 +14,10 @@ export type Users = {
 
 import Checkbox from "@/components/form/input/Checkbox"
 import { Button } from "@/components/ui/button"
+import DialogFormTrigger from "./DialogFormTrigger"
 
-export const columns: ColumnDef<Users>[] = [
+
+const columns: ColumnDef<Users>[] = [
   {
     id: 'select-col',
     header: ({ table }) => (
@@ -43,18 +45,20 @@ export const columns: ColumnDef<Users>[] = [
   },
   {
     accessorKey: "email",
-    header: ({ column }) => {
-      return (
+    header: "Email"
+    // ({ column }) => {
+      // return (
 
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Email
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    },
+      //   <Button
+      //     variant="ghost"
+      //     onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      //   >
+      //     Email
+      //     {(column.getIsSorted() === "asc") ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />}
+      //     {/* // <ArrowUpDown className="ml-2 h-4 w-4" /> */}
+      //   </Button>
+      // )
+    // },
   },
   {
     accessorKey: "role",
@@ -64,20 +68,23 @@ export const columns: ColumnDef<Users>[] = [
     // accessorKey: 'action',
     header: "Action",
     cell: ({ row }) => {
+      // console.log(row.original)
       return (
-        <div className="flex gap-1">
-          <Button size="icon" className="size-8 bg-green-700 text-white">
-            <Edit />
-          </Button>
-          <Button size="icon" className="size-8 bg-red-500 text-white">
+        <div className="flex gap-2">
+          <DialogFormTrigger action="edit" user={row.original}/>
+          <DialogFormTrigger action="delete" user={row.original}/>
+          <DialogFormTrigger action="reset" user={row.original}/>
+
+          {/* <Button size="icon" className="size-8 bg-red-500 text-white">
             <Trash2 />
           </Button>
           <Button size="icon" className="size-8 bg-slate-700 text-white">
             <KeyRound />
-          </Button>
+          </Button> */}
         </div>
 
       )
     }
   }
 ]
+export default columns
