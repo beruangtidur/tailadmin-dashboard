@@ -16,7 +16,9 @@ import z from 'zod'
 const createSchema = z.object({
     username: z.string().min(2).max(50),
     email: z.email().min(2).max(50),
-    role: z.string(),
+    role: z.enum(["admin", "user"], {
+        error: "The role must be either admin or password"
+    }),
     password: z.string().min(8).max(20),
     confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -211,7 +213,7 @@ const handleDeleteUser = async (e: React.MouseEvent<HTMLButtonElement>, id: stri
 
 export default function DialogFormTrigger({ action, user }: DialogFormProps) {
     const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false)
-
+    
     const queryClient = useQueryClient()
     const form = useForm<CreateValues | EditValues>({
         resolver: zodResolver((action === "create") ? createSchema : editSchema),
@@ -480,44 +482,6 @@ export default function DialogFormTrigger({ action, user }: DialogFormProps) {
         }
         // renderAll(action)
     }, [])
-
-    // let dialogTitle: string = ""
-    // const renderTriggerBtn = () => {
-    //     switch (action) {
-    //         case 'create':
-    //             dialogTitle = "Create User"
-    //             return (
-    //                 <Button><Plus />Add user</Button>
-    //             )
-    //             break;
-    //         case 'edit':
-    //             dialogTitle = "Edit User"
-    //             return (
-    //                 <Button size="icon" className="size-8 bg-green-700 text-white" ><Edit /></Button>
-    //             )
-    //             break;
-    //         case 'delete':
-    //             dialogTitle = "Delete User"
-    //             return (
-    //                 <Button size="icon" className="size-8 bg-red-500 text-white"><Trash2 /></Button>
-    //             )
-    //             break;
-    //         case 'reset':
-    //             return (
-    //                 <Button size="icon" className="size-8 bg-slate-700 text-white"><KeyRound /></Button>
-    //             )
-    //             break;
-
-    //         default:
-    //             break;
-    //     }
-    // }
-
-    // const renderForm = (form) => {
-    //     if(action === "create" || 'edit') {
-    //         return createUpdateForm(form)
-    //     }
-    // }
 
     return (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
