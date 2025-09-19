@@ -1,19 +1,19 @@
 "use client"
 
-import * as React from "react"
 import {
   ColumnDef,
+  RowSelectionState,
+  SortingState,
   flexRender,
   getCoreRowModel,
-  useReactTable,
-  SortingState,
-  getSortedRowModel,
-  RowSelectionState,
-  getPaginationRowModel,
-  type ColumnFiltersState,
   getFilteredRowModel,
-  type Column
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+  type Column,
+  type ColumnFiltersState
 } from "@tanstack/react-table"
+import * as React from "react"
 
 import {
   Table,
@@ -23,10 +23,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { ArrowDown, ArrowUp, Loader2 } from "lucide-react"
+import { ArrowDown, ArrowUp, Cross, X } from "lucide-react"
 import { Button } from "./button"
-import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "./pagination"
 import { Input } from "./input"
+import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "./pagination"
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -80,6 +80,39 @@ function Filter({ column }: { column: Column<any, unknown> }) {
     />
   )
 }
+
+function getPaginationRange({
+  currentPage,
+  totalPages,
+  siblingCount = 1,
+}: {
+  currentPage: number;
+  totalPages: number;
+  siblingCount?: number;
+}): (number | string)[] {
+  const totalNumbers = siblingCount * 2 + 5; // first, last, current, 2 dots
+  if (totalPages <= totalNumbers) {
+    return Array.from({ length: totalPages }, (_, i) => i + 1);
+  }
+
+  const startPage = Math.max(currentPage - siblingCount, 2);
+  const endPage = Math.min(currentPage + siblingCount, totalPages - 1);
+
+  const pages: (number | string)[] = [1];
+
+  if (startPage > 2) pages.push("...");
+
+  for (let i = startPage; i <= endPage; i++) {
+    pages.push(i);
+  }
+
+  if (endPage < totalPages - 1) pages.push("...");
+
+  pages.push(totalPages);
+
+  return pages;
+}
+
 export function DataTable<TData, TValue>({
   columns,
   data,
@@ -89,6 +122,10 @@ export function DataTable<TData, TValue>({
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({})
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [globalFilter, setGlobalFilter] = React.useState<any>([])
+  const [pagination, setPagination] = React.useState({
+    pageIndex: 0,
+    pageSize: 1
+  })
 
   const table = useReactTable({
     data,
@@ -101,27 +138,61 @@ export function DataTable<TData, TValue>({
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     onGlobalFilterChange: setGlobalFilter, // built-in filter function
+    onPaginationChange: setPagination,
     state: {
       sorting,
       rowSelection,
       columnFilters,
-      globalFilter
+      globalFilter,
+      pagination
     },
+
   })
 
+  const currentPage = pagination.pageIndex + 1;
+  const totalPages = table.getPageCount();
+
+  const pageNumbers = getPaginationRange({
+    currentPage,
+    totalPages,
+    siblingCount: 1,
+  });
 
   return (
     <div>
       <div className="flex items-center py-4 justify-end">
-        {/* <Input /> */}
-        <Input
+        {/* <div> */}
+        {/* <Input
           placeholder="Search..."
           // value={(table.getColumn("email")?.getFilterValue() as string) ?? ""}
           value={globalFilter ?? ""}
 
           onChange={e => table.setGlobalFilter(String(e.target.value))}
-          className="max-w-sm"
+          className="max-w-sm relative"
         />
+        <X className="ml-2 h-4 w-4 absolute cursor-pointer right-0" /> */}
+        {/* </div> */}
+        <div className="relative">
+          <Input
+            placeholder="Search..."
+            value={globalFilter ?? ""}
+
+            onChange={e => table.setGlobalFilter(String(e.target.value))}
+            className="max-w-sm relative"
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => table.setGlobalFilter("")}
+            className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+          >
+            {globalFilter !== ""? <X className="h-4 w-4 text-gray-500" /> : ""}
+
+          </Button>
+
+        </div>
+
       </div>
       <div className="overflow-hidden rounded-md border">
         <Table>
@@ -147,8 +218,8 @@ export function DataTable<TData, TValue>({
                                 header.getContext()
                               )}
                               {{
-                                asc: <ArrowUp  className="ml-2 h-4 w-4"  />,
-                                desc: <ArrowDown  className="ml-2 h-4 w-4" />,
+                                asc: <ArrowUp className="ml-2 h-4 w-4" />,
+                                desc: <ArrowDown className="ml-2 h-4 w-4" />,
                               }[header.column.getIsSorted() as string] ?? null}
                             </div>
                             {/* {header.column.getCanFilter() ? (
@@ -198,7 +269,7 @@ export function DataTable<TData, TValue>({
 
           </TableBody>
         </Table>
-        <Pagination>
+        <Pagination className="mt-5">
           <PaginationContent>
             {/* Previous */}
             <PaginationItem>
@@ -212,21 +283,22 @@ export function DataTable<TData, TValue>({
               />
             </PaginationItem>
 
-            {/* Page Numbers */}
-            {Array.from({ length: table.getPageCount() }).map((_, i) => (
-              <PaginationItem key={i}>
-                <PaginationLink
-                  href="#"
-                  isActive={table.getState().pagination.pageIndex === i}
-                  onClick={(e) => {
-                    e.preventDefault()
-                    table.setPageIndex(i)
-                  }}
+            {pageNumbers.map((page, i) =>
+              page === "..." ? (
+                <span key={`ellipsis-${i}`} className="px-2">
+                  ...
+                </span>
+              ) : (
+                <Button
+                  key={page}
+                  variant={page === currentPage ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => table.setPageIndex((page as number) - 1)}
                 >
-                  {i + 1}
-                </PaginationLink>
-              </PaginationItem>
-            ))}
+                  {page}
+                </Button>
+              )
+            )}
 
             {/* Next */}
             <PaginationItem>
@@ -242,46 +314,6 @@ export function DataTable<TData, TValue>({
           </PaginationContent>
         </Pagination>
 
-        {/* <div className="flex items-center justify-end space-x-2 py-4">
-
-        <Button
-          onClick={() => table.firstPage()}
-          disabled={!table.getCanPreviousPage()}
-        >
-          {'<<'}
-        </Button>
-        <Button
-          onClick={() => table.previousPage()}
-          disabled={!table.getCanPreviousPage()}
-        >
-          {'<'}
-        </Button>
-        <Button
-          onClick={() => table.nextPage()}
-          disabled={!table.getCanNextPage()}
-        >
-          {'>'}
-        </Button>
-        <Button
-          onClick={() => table.lastPage()}
-          disabled={!table.getCanNextPage()}
-        >
-          {'>>'}
-        </Button>
-        <select
-          value={table.getState().pagination.pageSize}
-          onChange={e => {
-            table.setPageSize(Number(e.target.value))
-          }}
-        >
-          {[10, 20, 30, 40, 50].map(pageSize => (
-            <option key={pageSize} value={pageSize}>
-              {pageSize}
-            </option>
-          ))}
-        </select>
-        
-      </div> */}
         {
           table.getFilteredSelectedRowModel().rows.length != 0 &&
           <div className="mt-4 ml-3 text-muted-foreground flex-1 text-sm">
