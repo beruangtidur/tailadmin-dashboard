@@ -23,7 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { ArrowDown, ArrowUp, Cross, X } from "lucide-react"
+import { ArrowDown, ArrowUp, Loader2, X } from "lucide-react"
 import { Button } from "./button"
 import { Input } from "./input"
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "./pagination"
@@ -65,7 +65,6 @@ function DebouncedInput({
     <input {...props} value={value} onChange={e => setValue(e.target.value)} />
   )
 }
-
 
 function Filter({ column }: { column: Column<any, unknown> }) {
   const columnFilterValue = column.getFilterValue()
@@ -116,12 +115,13 @@ function getPaginationRange({
 export function DataTable<TData, TValue>({
   columns,
   data,
+  isLoading
 }: DataTableProps<TData, TValue>) {
 
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({})
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-  const [globalFilter, setGlobalFilter] = React.useState<any>([])
+  const [globalFilter, setGlobalFilter] = React.useState<string>("")
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
     pageSize: 1
@@ -139,6 +139,7 @@ export function DataTable<TData, TValue>({
     getPaginationRowModel: getPaginationRowModel(),
     onGlobalFilterChange: setGlobalFilter, // built-in filter function
     onPaginationChange: setPagination,
+    autoResetPageIndex: false,
     state: {
       sorting,
       rowSelection,
@@ -161,17 +162,6 @@ export function DataTable<TData, TValue>({
   return (
     <div>
       <div className="flex items-center py-4 justify-end">
-        {/* <div> */}
-        {/* <Input
-          placeholder="Search..."
-          // value={(table.getColumn("email")?.getFilterValue() as string) ?? ""}
-          value={globalFilter ?? ""}
-
-          onChange={e => table.setGlobalFilter(String(e.target.value))}
-          className="max-w-sm relative"
-        />
-        <X className="ml-2 h-4 w-4 absolute cursor-pointer right-0" /> */}
-        {/* </div> */}
         <div className="relative">
           <Input
             placeholder="Search..."
@@ -187,10 +177,8 @@ export function DataTable<TData, TValue>({
             onClick={() => table.setGlobalFilter("")}
             className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
           >
-            {globalFilter !== ""? <X className="h-4 w-4 text-gray-500" /> : ""}
-
+            {globalFilter !== "" ? <X className="h-4 w-4 text-gray-500" /> : ""}
           </Button>
-
         </div>
 
       </div>
@@ -222,19 +210,9 @@ export function DataTable<TData, TValue>({
                                 desc: <ArrowDown className="ml-2 h-4 w-4" />,
                               }[header.column.getIsSorted() as string] ?? null}
                             </div>
-                            {/* {header.column.getCanFilter() ? (
-                              <div>
-                                <Filter column={header.column} />
-                              </div>
-                            ) : null} */}
                           </>
 
                         )}
-                      {/* 
-                        // flexRender(
-                        //   header.column.columnDef.header,
-                        //   header.getContext()
-                        // )} */}
                     </TableHead>
                   )
                 })}
@@ -244,27 +222,36 @@ export function DataTable<TData, TValue>({
           <TableBody>
             {
 
-              (table.getRowModel().rows?.length) ?
-
-                table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    data-state={row.getIsSelected() && "selected"}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-                :
-                <TableRow>
-                  <TableCell colSpan={columns.length} className="h-24 text-center">
-                    No results.
+              (isLoading ?
+                <TableRow className="">
+                  <TableCell colSpan={columns.length} className="h-15 ">
+                    <div className="flex justify-center">
+                      <Loader2 className="animate-spin" />
+                    </div>
                   </TableCell>
                 </TableRow>
+                :
+                (table.getRowModel().rows?.length) ?
 
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow
+                      key={row.id}
+                      data-state={row.getIsSelected() && "selected"}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                  :
+                  <TableRow>
+                    <TableCell colSpan={columns.length} className="h-24 text-center">
+                      No results.
+                    </TableCell>
+                  </TableRow>
+              )
             }
 
           </TableBody>
