@@ -5,7 +5,8 @@ import { NextResponse } from "next/server";
 
 export async function GET(){
     const users = await prisma.user.findMany({
-        select: {id: true, username:true, email:true, role:true}
+        select: {id: true, username:true, email:true, role:true},
+        orderBy: {createdAt: 'asc'}
     })
 
     return NextResponse.json(users)
