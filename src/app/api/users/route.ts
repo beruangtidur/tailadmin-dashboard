@@ -3,22 +3,46 @@ import * as bcrypt from 'bcrypt';
 
 import { NextResponse } from "next/server";
 
-export async function GET(){
+export async function GET() {
     const users = await prisma.user.findMany({
-        select: {id: true, username:true, email:true, role:true},
-        orderBy: {createdAt: 'asc'}
+        select: { id: true, username: true, email: true, role: true },
+        orderBy: { createdAt: 'asc' }
     })
 
     return NextResponse.json(users)
 }
 
 export async function POST(req: Request) {
-    
-    // console.log(req)
-    const {username, role, email, password } = await req.json()
 
-    const hashed = await bcrypt.hash(password,10)
+    // console.log(req)
+    const { username, role, email, password } = await req.json()
+
+    const hashed = await bcrypt.hash(password, 10)
     // validation input
+
+    const user = await prisma.user.findFirst({
+        where: {
+            OR: [
+                { email },
+                { username }
+            ]
+        }
+    })
+    // const user = await prisma.user.findUnique({
+    //     where: {
+    //         OR: [
+    //             { email },
+    //             { username }
+    //         ]
+    //     },
+    //     select: { id: true, username: true, email: true, role: true },
+    // })
+
+    if (user) return NextResponse.json({
+        "status": "error",
+        "msg": "User already Exists",
+    })
+
     const createdUser = await prisma.user.create({
         data: {
             username,
@@ -27,5 +51,9 @@ export async function POST(req: Request) {
             password: hashed
         }
     })
-    return NextResponse.json(createdUser)
+    return NextResponse.json({
+        "status": "success",
+        "msg": "User created successfully",
+        "body": createdUser
+    })
 }
