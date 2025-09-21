@@ -13,7 +13,7 @@ import {
   type Column,
   type ColumnFiltersState
 } from "@tanstack/react-table"
-import * as React from "react"
+
 
 import {
   Table,
@@ -27,6 +27,7 @@ import { ArrowDown, ArrowUp, Loader2, X } from "lucide-react"
 import { Button } from "./button"
 import { Input } from "./input"
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "./pagination"
+import { useEffect, useState, type InputHTMLAttributes } from "react"
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -46,14 +47,14 @@ function DebouncedInput({
   value: string | number
   onChange: (value: string | number) => void
   debounce?: number
-} & Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange'>) {
-  const [value, setValue] = React.useState(initialValue)
+} & Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange'>) {
+  const [value, setValue] = useState(initialValue)
 
-  React.useEffect(() => {
+  useEffect(() => {
     setValue(initialValue)
   }, [initialValue])
 
-  React.useEffect(() => {
+  useEffect(() => {
     const timeout = setTimeout(() => {
       onChange(value)
     }, debounce)
@@ -118,11 +119,11 @@ export function DataTable<TData, TValue>({
   isLoading
 }: DataTableProps<TData, TValue>) {
 
-  const [sorting, setSorting] = React.useState<SortingState>([])
-  const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({})
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-  const [globalFilter, setGlobalFilter] = React.useState<string>("")
-  const [pagination, setPagination] = React.useState({
+  const [sorting, setSorting] = useState<SortingState>([])
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+  const [globalFilter, setGlobalFilter] = useState<string>("")
+  const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 1
   })
@@ -159,6 +160,9 @@ export function DataTable<TData, TValue>({
     siblingCount: 1,
   });
 
+  useEffect(()=>{
+    table.setPageIndex(0)
+  }, [globalFilter])
   return (
     <div>
       <div className="flex items-center py-4 justify-end">
