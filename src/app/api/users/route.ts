@@ -3,6 +3,12 @@ import * as bcrypt from 'bcrypt';
 
 import { NextResponse } from "next/server";
 
+type ApiResponse = {
+    status: 'success' | 'error'
+    msg: string,
+    data? : null
+}
+
 export async function GET() {
     const users = await prisma.user.findMany({
         select: { id: true, username: true, email: true, role: true },
@@ -38,10 +44,10 @@ export async function POST(req: Request) {
     //     select: { id: true, username: true, email: true, role: true },
     // })
 
-    if (user) return NextResponse.json({
+    if (user) return NextResponse.json<ApiResponse>({
         "status": "error",
         "msg": "User already Exists",
-    })
+    } )
 
     const createdUser = await prisma.user.create({
         data: {
@@ -51,9 +57,9 @@ export async function POST(req: Request) {
             password: hashed
         }
     })
-    return NextResponse.json({
+    return NextResponse.json<ApiResponse>({
         "status": "success",
         "msg": "User created successfully",
-        "body": createdUser
+        "data": createdUser
     })
 }
