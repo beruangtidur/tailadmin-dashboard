@@ -5,11 +5,10 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import type { JSX } from '@fullcalendar/core/preact.js'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { Edit, Eye, EyeOff, KeyRound, Loader2, Plus, Trash2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import React, { forwardRef, useEffect, useState } from 'react'
 import { useForm, type UseFormReturn } from 'react-hook-form'
 import { toast } from 'sonner'
 import z from 'zod'
@@ -43,26 +42,27 @@ type DialogFormProps = {
     action: 'create' | 'edit' | 'delete' | 'reset'
     user?: z.infer<typeof createSchema>
 }
+type DialogButtonProps = {
+    action: "create" | "edit" | "delete" | "reset"
+} & React.ComponentPropsWithoutRef<typeof Button> // biar semua props <button> valid
 
-
-const handleCreateUser = async (data: CreateValues, queryClient: QueryClient, setIsDialogOpen: (isDialogOpen: boolean) => void, form: UseFormReturn<CreateValues>) => {
+const handleCreateUser = async (formData: CreateValues, queryClient: QueryClient, setIsDialogOpen: (isDialogOpen: boolean) => void, form: UseFormReturn<CreateValues>) => {
     try {
         const res = await fetch('/api/users', {
             method: "POST",
             headers: {
                 'Content-Type': "application/json"
             },
-            body: JSON.stringify(data)
+            body: JSON.stringify(formData)
         })
 
-        const realData = await res.json()
+        const data = await res.json()
 
-        // console.log(realData)
-        if (realData.status === "error") {
-            toast.error(realData.msg)
+        if (data.status === "error") {
+            toast.error(data.msg)
         }
 
-        if (realData.status === "success") {
+        if (data.status === "success") {
             setIsDialogOpen(false)
             queryClient.invalidateQueries({ queryKey: ["users"] })
             form.reset()
@@ -74,14 +74,14 @@ const handleCreateUser = async (data: CreateValues, queryClient: QueryClient, se
     }
 }
 
-const handleUpdateUser = async (data: EditValues, queryClient: QueryClient, setIsDialogOpen: (isDialogOpen: boolean) => void, form: UseFormReturn<EditValues>) => {
+const handleUpdateUser = async (formData: EditValues, queryClient: QueryClient, setIsDialogOpen: (isDialogOpen: boolean) => void, form: UseFormReturn<EditValues>) => {
     const changedData = Object.keys(form.formState.dirtyFields).reduce((acc, key) => {
         acc[key as keyof EditValues] = form.getValues(key as keyof EditValues);
         return acc;
     }, {} as Partial<EditValues>);
 
     try {
-        const res = await fetch('/api/users/' + data.id, {
+        const res = await fetch('/api/users/' + formData.id, {
             method: "PUT",
             headers: {
                 'Content-Type': "application/json"
@@ -89,17 +89,26 @@ const handleUpdateUser = async (data: EditValues, queryClient: QueryClient, setI
             body: JSON.stringify(changedData)
         })
 
-        if (res.ok && res.status === 200) {
+
+        const data = await res.json()
+
+        if (data.status === "error") {
+            toast.success(data.msg)
+        }
+
+        if (data.status === "success") {
+            form.reset(data.data)
             setIsDialogOpen(false)
             queryClient.invalidateQueries({ queryKey: ["users"] })
-            form.reset()
+            toast.success('User Berhasil diupdate')
         }
     } catch (error) {
 
     }
 }
 
-const handleDeleteUser = async (e: React.MouseEvent<HTMLButtonElement>, id: string, queryClient: QueryClient, setIsDialogOpen: (isDialogOpen: boolean) => void,) => {
+const handleDeleteUser = async (setIsSubmittig: () => void, e: React.MouseEvent<HTMLButtonElement>, id: string, queryClient: QueryClient, setIsDialogOpen: (isDialogOpen: boolean) => void,) => {
+    setIsSubmittig(true)
     try {
         const res = await fetch('/api/users/' + id, {
             method: "DELETE",
@@ -108,19 +117,38 @@ const handleDeleteUser = async (e: React.MouseEvent<HTMLButtonElement>, id: stri
             },
         })
 
-        if (res.ok && res.status === 200) {
+        const data = await res.json()
+
+        if (data.status === "error") {
+            toast.error(data.msg)
+        }
+
+        if (data.status === "success") {
             setIsDialogOpen(false)
             queryClient.invalidateQueries({ queryKey: ["users"] })
+            toast.success('User Berhasil dihapus')
         }
     } catch (error) {
 
     }
 }
+// forwardRef<HTMLButtonElement, {action: string}>
 
+
+const DialogButton = forwardRef<HTMLButtonElement, DialogButtonProps>(
+    ({ action, ...props }, ref) => {
+        if (action == 'create') return <Button ref={ref} {...props}><Plus />Add user</Button>
+        if (action == 'edit') return <Button ref={ref} {...props} size="icon" className="size-8 bg-green-700 text-white" ><Edit /></Button>
+        if (action == 'delete') return <Button ref={ref}{...props} size="icon" className="size-8 bg-red-500 text-white"><Trash2 /></Button>
+        if (action == 'reset') return <Button ref={ref}{...props} size="icon" className="size-8 bg-slate-700 text-white"><KeyRound /></Button>
+    }
+)
+DialogButton.displayName = "DialogButton"
+// const {action, ...res} = props
 
 export default function DialogFormTrigger({ action, user }: DialogFormProps) {
     const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false)
-
+    const [isDeleteSubmitting, setIsDeleteSubmitting] = useState<boolean>(false)
     const queryClient = useQueryClient()
     const form = useForm<CreateValues | EditValues>({
         resolver: zodResolver((action === "create") ? createSchema : editSchema),
@@ -141,16 +169,11 @@ export default function DialogFormTrigger({ action, user }: DialogFormProps) {
     })
 
     const [dialogTitle, setDialogTitle] = useState<string>("")
-    const [dialogButton, setDialogButton] = useState<JSX.Element | null>(null)
-    const [dialogContent, setDialogContent] = useState<JSX.Element | null>(null)
+    // const [dialogButton, setDialogButton] = useState<JSX.Element | null>(null)
+    // const [dialogContent, setDialogContent] = useState<JSX.Element | null>(null)
     const [showPassword, setShowPassword] = useState<boolean>(false);
 
-    const renderDialogButton: JSX.Element = () => {
-        if (action == 'create') return <Button><Plus />Add user</Button>
-        if (action == 'edit') return <Button size="icon" className="size-8 bg-green-700 text-white" ><Edit /></Button>
-        if (action == 'delete') return <Button size="icon" className="size-8 bg-red-500 text-white"><Trash2 /></Button>
-        if (action == 'reset') return <Button size="icon" className="size-8 bg-slate-700 text-white"><KeyRound /></Button>
-    }
+
 
     useEffect(() => {
         switch (action) {
@@ -175,9 +198,9 @@ export default function DialogFormTrigger({ action, user }: DialogFormProps) {
     return (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-                {renderDialogButton()}
+                <DialogButton action={action} />
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent onOpenAutoFocus={(e) => { e.preventDefault() }}>
                 <DialogHeader>
                     <DialogTitle>{dialogTitle}</DialogTitle>
                 </DialogHeader>
@@ -337,15 +360,32 @@ export default function DialogFormTrigger({ action, user }: DialogFormProps) {
                                     </FormItem>
                                 )}
                             />
-                            <Button type="submit" disabled={!form.formState.isDirty} className="mt-2">Update user</Button>
+                            {/* <Button type="submit" disabled={!form.formState.isDirty} className="mt-2">Update user</Button> */}
+                            <Button type="submit" disabled={form.formState.isSubmitting || !form.formState.isDirty} className="mt-2">
+                                {form.formState.isSubmitting ? <Loader2 className='animate-spin' /> : ""}
+                                Update user
+                            </Button>
                         </form>
                     </Form>
                 )}
 
                 {action == 'delete' && (
-                    <DialogFooter className='text-right'>
-                        <Button variant='destructive' className="mt-2" type="submit" onClick={(e) => handleDeleteUser(e, user?.id, queryClient, setIsDialogOpen)}>Confirm</Button>
-                    </DialogFooter>
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit((values) => handleUpdateUser(values, queryClient, setIsDialogOpen, form))} className="space-y-3 text-right">
+                            <FormField
+                                control={form.control}
+                                name="id"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <Input type="hidden"  {...field} />
+                                    </FormItem>
+                                )}
+                            />
+                        </form>
+                        <DialogFooter className='text-right'>
+                            <Button variant="destructive" className="mt-2" disabled={isDeleteSubmitting} type="submit" onClick={(e) => handleDeleteUser(setIsDeleteSubmitting, e, user?.id, queryClient, setIsDialogOpen)}>  {isDeleteSubmitting ? <Loader2 className='animate-spin' /> : ""} Confirm</Button>
+                        </DialogFooter>
+                    </Form>
                 )}
 
                 {action == 'reset' && (
