@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "public"."User" ADD COLUMN     "name" TEXT,
+ALTER COLUMN "username" DROP NOT NULL,
+ALTER COLUMN "password" DROP NOT NULL,
+ALTER COLUMN "role" DROP NOT NULL;
