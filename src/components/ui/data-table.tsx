@@ -28,6 +28,7 @@ import { Button } from "./button"
 import { Input } from "./input"
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "./pagination"
 import { useEffect, useState, type InputHTMLAttributes } from "react"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "./select"
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -160,7 +161,7 @@ export function DataTable<TData, TValue>({
     siblingCount: 1,
   });
 
-  useEffect(()=>{
+  useEffect(() => {
     table.setPageIndex(0)
   }, [globalFilter])
   return (
@@ -305,6 +306,37 @@ export function DataTable<TData, TValue>({
           </PaginationContent>
         </Pagination>
 
+        <Select value={table.getState().pagination.pageSize.toString()} onValueChange={val => {
+          table.setPageSize(Number(val))
+        }}>
+          <div className="flex justify-end my-5 mx-5">
+            <SelectTrigger>
+              <SelectValue placeholder="Per page" />
+            </SelectTrigger>
+          </div>
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>Pages</SelectLabel>
+              {[1, 2, 3, 4, 5].map(pageSize => (
+                <SelectItem key={pageSize} value={pageSize.toString()}>
+                  {pageSize}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+        {/* <Select
+          value={table.getState().pagination.pageSize}
+          onChange={e => {
+            table.setPageSize(Number(e.target.value))
+          }}
+        >
+          {[1, 2, 3, 4, 5].map(pageSize => (
+            <SelectItem key={pageSize} value={pageSize}>
+              {pageSize}
+            </SelectItem>
+          ))}
+        </Select> */}
         {
           table.getFilteredSelectedRowModel().rows.length != 0 &&
           <div className="mt-4 ml-3 text-muted-foreground flex-1 text-sm">
