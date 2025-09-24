@@ -1,5 +1,5 @@
 "use client";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useState } from "react";
@@ -18,6 +18,7 @@ export default function UserDropdown() {
   function closeDropdown() {
     setIsOpen(false);
   }
+
   const handleLogout = () => {
     toast.loading('Logging out...');
     signOut({ callbackUrl: '/login', redirect: false }).then((res) => {
@@ -27,8 +28,11 @@ export default function UserDropdown() {
         toast.success('Logged out successfully!');
         window.location.href = '/login';
       }
-  })
+    })
   }
+
+  const { data: session } = useSession()
+  console.log(session)
   return (
     <div className="relative">
       <button
@@ -44,7 +48,7 @@ export default function UserDropdown() {
           />
         </span>
 
-        <span className="block mr-1 font-medium text-theme-sm">Musharof</span>
+        <span className="block mr-1 font-medium text-theme-sm">{session?.user?.username}</span>
 
         <svg
           className={`stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""
@@ -72,10 +76,10 @@ export default function UserDropdown() {
       >
         <div>
           <span className="block font-medium text-gray-700 text-theme-sm dark:text-gray-400">
-            Musharof Chowdhury
+            { session?.user?.name || session?.user?.username }
           </span>
           <span className="mt-0.5 block text-theme-xs text-gray-500 dark:text-gray-400">
-            randomuser@pimjo.com
+            { session?.user?.email}
           </span>
         </div>
 
