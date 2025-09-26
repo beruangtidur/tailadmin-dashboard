@@ -32,7 +32,7 @@ export default function UserDropdown() {
   }
 
   const { data: session } = useSession()
-  console.log(session)
+  
   return (
     <div className="relative">
       <button

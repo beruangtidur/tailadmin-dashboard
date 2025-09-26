@@ -26,7 +26,7 @@ export default function AdminLayout({
       : "lg:ml-[90px]";
 
   return (
-    <SessionProvider>
+    <SessionProvider refetchInterval={0} refetchOnWindowFocus={false}>
       <QueryClientProvider client={queryClient}>
         <div className="min-h-screen xl:flex">
           {/* Sidebar and Backdrop */}

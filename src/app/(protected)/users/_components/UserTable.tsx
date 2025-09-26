@@ -6,9 +6,9 @@ import columns, { Users } from "./columns";
 async function fetchUsers(): Promise<Users[]> {
     // Fetch data from your API here.
     const res = await fetch('http://localhost:3000/api/users')
-    const users = res.json()
+    const data = res.json()
 
-    return users
+    return data
 }
 
 export default function UserTable() {
@@ -16,8 +16,8 @@ export default function UserTable() {
         queryKey: ["users"],
         queryFn: fetchUsers,
     });
-
+    
     return (
-        <DataTable columns={columns} data={data} isLoading={isLoading} />
+        <DataTable columns={columns} data={!isLoading && data.data} isLoading={isLoading} />
     )
 }
