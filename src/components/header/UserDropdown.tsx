@@ -22,6 +22,7 @@ export default function UserDropdown() {
   const handleLogout = () => {
     toast.loading('Logging out...');
     signOut({ callbackUrl: '/login', redirect: false }).then((res) => {
+      toast.dismiss()
       if (res?.error) {
         // Handle error if needed
       } else {
