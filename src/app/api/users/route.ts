@@ -1,14 +1,7 @@
+import { apiError, apiSuccess } from "@/lib/apiResponse";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import * as bcrypt from 'bcrypt';
-
-import { NextResponse } from "next/server";
-
-export type ApiResponse<T = unknown> = {
-    status: 'success' | 'error'
-    msg: string
-    data?: T
-}
 
 export const GET = auth(async (req) => {
     const users = await prisma.user.findMany({
@@ -16,11 +9,7 @@ export const GET = auth(async (req) => {
         orderBy: { createdAt: 'asc' }
     })
 
-    return NextResponse.json<ApiResponse>({
-        "status": "success",
-        "msg": "All users are loaded",
-        "data": users
-    }, { status: 200 })
+    return apiSuccess("All users are loaded", users)
 })
 
 export async function POST(req: Request) {
@@ -40,10 +29,8 @@ export async function POST(req: Request) {
         }
     })
 
-    if (user) return NextResponse.json<ApiResponse>({
-        "status": "error",
-        "msg": "User already Exists",
-    }, { status: 409 })
+    if (user && user.username === username) return apiError("User already exists")
+    if (user && user.email === email) return apiError("Email already exists")
 
     const createdUser = await prisma.user.create({
         data: {
@@ -53,9 +40,6 @@ export async function POST(req: Request) {
             password: hashed
         }
     })
-    return NextResponse.json<ApiResponse>({
-        "status": "success",
-        "msg": "User created successfully",
-        "data": createdUser
-    }, { status: 201 })
+    
+    return apiSuccess("User created successfully", createdUser)
 }
