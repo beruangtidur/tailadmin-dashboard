@@ -14,10 +14,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 return {
                     ...provider,
                     async authorize(credentials: any) {
-                        if (!credentials?.email || !credentials?.password) return null
+                        if (!credentials?.uoe || !credentials?.password) return null
 
-                        const user = await prisma.user.findUnique({
-                            where: { email: credentials.email },
+                        // const type = credentials.uoe.includes('@') ? 'email' : 'username'
+
+                        // const loginSchema = z.email().or(z.string().min(3).max(20).regex(/^[a-zA-Z0-9_]+$/))
+                        // const parse = loginSchema.safeParse(credentials.uoe)
+
+                        // if (!parse.success) return null
+                        const user = await prisma.user.findFirst({
+                            where: {
+                                OR: [
+                                    { email: credentials.uoe },
+                                    { username: credentials.uoe }
+                                ]
+                            }
                         })
                         if (!user || !user.password) return null
 

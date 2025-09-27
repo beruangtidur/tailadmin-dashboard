@@ -18,6 +18,6 @@ export default function UserTable() {
     });
     
     return (
-        <DataTable columns={columns} data={!isLoading && data.data} isLoading={isLoading} />
+        <DataTable columns={columns} data={data?.data ?? []} isLoading={isLoading} />
     )
 }
