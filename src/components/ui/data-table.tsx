@@ -35,53 +35,6 @@ interface DataTableProps<TData, TValue> {
   data: TData[],
   isLoading: boolean
 }
-interface GlobalFilter {
-  globalFilter: any
-}
-
-function DebouncedInput({
-  value: initialValue,
-  onChange,
-  debounce = 500,
-  ...props
-}: {
-  value: string | number
-  onChange: (value: string | number) => void
-  debounce?: number
-} & Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange'>) {
-  const [value, setValue] = useState(initialValue)
-
-  useEffect(() => {
-    setValue(initialValue)
-  }, [initialValue])
-
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      onChange(value)
-    }, debounce)
-
-    return () => clearTimeout(timeout)
-  }, [value])
-
-  return (
-    <input {...props} value={value} onChange={e => setValue(e.target.value)} />
-  )
-}
-
-function Filter({ column }: { column: Column<any, unknown> }) {
-  const columnFilterValue = column.getFilterValue()
-
-  return (
-    <DebouncedInput
-      type="text"
-      value={(columnFilterValue ?? '') as string}
-      onChange={value => column.setFilterValue(value)}
-      placeholder={`Search...`}
-      className="w-36 border shadow rounded"
-    />
-  )
-}
-
 function getPaginationRange({
   currentPage,
   totalPages,
@@ -325,18 +278,6 @@ export function DataTable<TData, TValue>({
             </SelectGroup>
           </SelectContent>
         </Select>
-        {/* <Select
-          value={table.getState().pagination.pageSize}
-          onChange={e => {
-            table.setPageSize(Number(e.target.value))
-          }}
-        >
-          {[1, 2, 3, 4, 5].map(pageSize => (
-            <SelectItem key={pageSize} value={pageSize}>
-              {pageSize}
-            </SelectItem>
-          ))}
-        </Select> */}
         {
           table.getFilteredSelectedRowModel().rows.length != 0 &&
           <div className="mt-4 ml-3 text-muted-foreground flex-1 text-sm">

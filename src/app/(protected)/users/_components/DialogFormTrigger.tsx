@@ -138,13 +138,12 @@ const handleDeleteUser = async (setIsSubmittig: () => void, e: React.MouseEvent<
 const DialogButton = forwardRef<HTMLButtonElement, DialogButtonProps>(
     ({ action, ...props }, ref) => {
         if (action == 'create') return <Button ref={ref} {...props}><Plus />Add user</Button>
-        if (action == 'edit') return <Button ref={ref} {...props} size="icon" className="size-8 bg-green-700 text-white" ><Edit /></Button>
-        if (action == 'delete') return <Button ref={ref}{...props} size="icon" className="size-8 bg-red-500 text-white"><Trash2 /></Button>
-        if (action == 'reset') return <Button ref={ref}{...props} size="icon" className="size-8 bg-slate-700 text-white"><KeyRound /></Button>
+        if (action == 'edit') return <Button ref={ref} {...props} size="icon" className="size-8 bg-emerald-700 text-white" ><Edit /></Button>
+        if (action == 'delete') return <Button ref={ref}{...props} size="icon" className="size-8 bg-rose-500 text-white"><Trash2 /></Button>
+        if (action == 'reset') return <Button ref={ref}{...props} size="icon" className="size-8 bg-slate-500 text-white"><KeyRound /></Button>
     }
 )
 DialogButton.displayName = "DialogButton"
-// const {action, ...res} = props
 
 export default function DialogFormTrigger({ action, user }: DialogFormProps) {
     const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false)
@@ -400,7 +399,6 @@ export default function DialogFormTrigger({ action, user }: DialogFormProps) {
                                         <FormControl>
                                             <div className="relative">
                                                 <Input type={showPassword ? 'text' : 'password'} placeholder="yourNewPassword" {...field} className='relative' />
-                                                {/* <EyeOffIcon /> */}
                                                 <Button
                                                     type="button"
                                                     variant="ghost"
