@@ -11,8 +11,11 @@ export type Users = {
   createdAt: string
 }
 
+import DialogFormTrigger from "@/components/dialog/DialogFormTrigger"
 import Checkbox from "@/components/form/input/Checkbox"
-import DialogFormTrigger from "./DialogFormTrigger"
+import { Edit, KeyRound, Trash2 } from "lucide-react"
+import InnerUserForm from "./InnerUserForm"
+// import DialogFormTrigger from "./DialogFormTrigger"
 
 
 const columns: ColumnDef<Users>[] = [
@@ -53,9 +56,18 @@ const columns: ColumnDef<Users>[] = [
     cell: ({ row }) => {
       return (
         <div className="flex gap-2">
-          <DialogFormTrigger action="edit" user={row.original}/>
-          <DialogFormTrigger action="delete" user={row.original}/>
-          <DialogFormTrigger action="reset" user={row.original}/>
+          <DialogFormTrigger title="Edit User" triggerLabel={<Edit />} triggerVariant="default" customClassTrigger="bg-emerald-700 text-white">
+            <InnerUserForm action="edit" user={row.original} />
+          </DialogFormTrigger>
+          <DialogFormTrigger title="Delete User" triggerLabel={<Trash2 />} triggerVariant="default" customClassTrigger="bg-rose-500 text-white">
+            <InnerUserForm action="Delete" user={row.original} />
+          </DialogFormTrigger>
+          <DialogFormTrigger title="Reset Password" triggerLabel={<KeyRound />} triggerVariant="default" customClassTrigger="bg-slate-500 text-white">
+            <InnerUserForm action="reset" user={row.original} />
+          </DialogFormTrigger>
+          {/* <DialogFormTrigger action="edit" user={row.original}/> */}
+          {/* <DialogFormTrigger action="delete" user={row.original}/> */}
+          {/* <DialogFormTrigger action="reset" user={row.original}/> */}
         </div>
 
       )
