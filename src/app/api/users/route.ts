@@ -14,7 +14,6 @@ export const GET = auth(async (req) => {
 
 export async function POST(req: Request) {
 
-    // console.log(req)
     const { username, role, email, password } = await req.json()
 
     const hashed = await bcrypt.hash(password, 10)

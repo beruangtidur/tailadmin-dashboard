@@ -4,13 +4,24 @@ import { prisma } from "@/lib/prisma";
 
 import { NextResponse } from "next/server";
 
-interface Params {
+type Params = {
     params: { id: string }
 }
+type updateUser = {
+    username?: string,
+    email?: string,
+    role?: string,
+    name?: string,
+}
+
+type resetPassword = {
+    password: string
+}
+
 type ApiResponse = {
     status: 'success' | 'error'
     msg: string,
-    data?: null
+    data?: {}
 }
 
 export async function GET(req: Request, { params }: Params) {
@@ -28,9 +39,9 @@ export async function GET(req: Request, { params }: Params) {
 
 
 export async function PUT(req: Request, { params }: Params) {
-    const body = await req.json()
+    const body: updateUser = await req.json()
 
-    const id = params.id
+    const { id } = await params
     try {
         const updatedUser = await prisma.user.update({
             where: { id },
@@ -47,11 +58,32 @@ export async function PUT(req: Request, { params }: Params) {
             msg: "User failed to edit",
         })
     }
-    // console.log(req)
+}
+
+export async function PATCH(req: Request, { params }: Params) {
+    const body : resetPassword = await req.json()
+
+    const {id} = await params
+    try {
+        const resetPassword = await prisma.user.update({
+            where: { id },
+            data: body,
+        })
+        return NextResponse.json<ApiResponse>({
+            status: "success",
+            msg: "User password has been reset",
+            data: resetPassword
+        })
+    } catch (error) {
+        return NextResponse.json<ApiResponse>({
+            status: "error",
+            msg: "User failed to edit",
+        })
+    }
 }
 
 export async function DELETE(req: Request, { params }: Params) {
-    const id = params.id
+    const {id} = await params
 
     try {
         const deletedUser = await prisma.user.delete({

@@ -2,21 +2,18 @@
 
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { DialogContext } from '@/context/DialogContext'
 import { cn } from '@/lib/utils'
 import React, { useState } from 'react'
 
 
 type GlobalDialogProps = {
-    /** Text untuk tombol trigger */
-    triggerLabel: string | React.ReactNode
-    /** Variasi tombol trigger, default = "default" */
+    triggerLabel: React.ReactNode
     triggerVariant?: "default" | "destructive" | "outline" | "secondary"
-    /** Judul dialog */
     title: string
-    /** Konten custom (misalnya form) */
     children?: React.ReactNode,
-
-    customClassTrigger?: string
+    customClassTrigger?: string,
+    sizeIcon?: boolean
 }
 
 export default function DialogFormTrigger({
@@ -24,23 +21,24 @@ export default function DialogFormTrigger({
     triggerVariant = "default",
     title,
     children,
-    customClassTrigger
+    customClassTrigger,
+    sizeIcon = false
 }: GlobalDialogProps) {
 
     const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false)
-
     return (
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-                <Button size="icon" className={cn('size-8', customClassTrigger)} variant={triggerVariant}>{triggerLabel}</Button>
-            </DialogTrigger>
-            <DialogContent onOpenAutoFocus={(e) => { e.preventDefault() }}>
-                <DialogHeader>
-                    <DialogTitle>{title}</DialogTitle>
-                </DialogHeader>
-                {children && React.cloneElement(children as React.ReactElement, { setIsDialogOpen })}
-    
-            </DialogContent>
-        </Dialog>
+        <DialogContext.Provider value={{ setIsDialogOpen }}>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                    <Button size={sizeIcon ? "icon" : "default"} className={cn("hover:text-white", customClassTrigger)} variant={triggerVariant}>{triggerLabel}</Button>
+                </DialogTrigger>
+                <DialogContent onOpenAutoFocus={(e) => { e.preventDefault() }}>
+                    <DialogHeader>
+                        <DialogTitle>{title}</DialogTitle>
+                    </DialogHeader>
+                    {children}
+                </DialogContent>
+            </Dialog>
+        </DialogContext.Provider>
     )
 }
