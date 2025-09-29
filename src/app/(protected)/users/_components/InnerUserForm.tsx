@@ -10,8 +10,10 @@ import type { Users } from './columns'
 import z from 'zod'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Loader2 } from 'lucide-react'
+import { Eye, EyeOff, Loader2, User } from 'lucide-react'
 import { toast } from 'sonner'
+import { DialogFooter } from '@/components/ui/dialog'
+import { useDialog } from '@/context/DialogContext'
 
 const createSchema = z.object({
     username: z.string().min(2).max(50),
@@ -27,11 +29,12 @@ const createSchema = z.object({
 })
 const editSchema = z.object({
     id: z.string(),
-    username: z.string().min(2).max(50),
-    email: z.email().min(2).max(50),
-    role: z.string(),
+    username: z.string().min(2).max(50).optional(),
+    email: z.email().min(2).max(50).optional(),
+    role: z.string().optional(),
 })
 const resetSchema = z.object({
+    id: z.string(),
     password: z.string().min(8).max(20),
 })
 
@@ -67,7 +70,7 @@ const handleCreateUser = async (formData: CreateValues, queryClient: QueryClient
     }
 }
 
-const handleUpdateUser = async (formData: EditValues, queryClient: QueryClient, setIsDialogOpen: (isDialogOpen: boolean) => void, form: UseFormReturn<EditValues>) => {
+const handleUpdateUser = async (formData: EditValues, queryClient: QueryClient, setIsDialogOpen: (open: boolean) => void, form: UseFormReturn<EditValues>) => {
     const changedData = Object.keys(form.formState.dirtyFields).reduce((acc, key) => {
         acc[key as keyof EditValues] = form.getValues(key as keyof EditValues);
         return acc;
@@ -100,7 +103,7 @@ const handleUpdateUser = async (formData: EditValues, queryClient: QueryClient, 
     }
 }
 
-const handleDeleteUser = async (setIsSubmittig: () => void, e: React.MouseEvent<HTMLButtonElement>, id: string, queryClient: QueryClient, setIsDialogOpen: (isDialogOpen: boolean) => void,) => {
+const handleDeleteUser = async (setIsSubmittig: (open: boolean) => void, id: string, setIsDialogOpen: (open: boolean) => void, queryClient: QueryClient) => {
     setIsSubmittig(true)
     try {
         const res = await fetch('/api/users/' + id, {
@@ -125,39 +128,68 @@ const handleDeleteUser = async (setIsSubmittig: () => void, e: React.MouseEvent<
 
     }
 }
-export default function InnerUserForm({ action, user, setIsDialogOpen}: { action: string, user : Users | null, setIsDialogOpen : (open: boolean) => void }) {
+
+const handleResetPassword = async (formData: ResetValues, setIsDialogOpen: (open: boolean) => void, queryClient: QueryClient) => {
+    try {
+        const res = await fetch('/api/users/' + formData.id, {
+            method: "PATCH",
+            headers: {
+                'Content-Type': "application/json"
+            },
+            body: JSON.stringify(formData)
+        })
+
+        const data = await res.json()
+
+        if (data.status === "error") {
+            toast.error(data.msg)
+        }
+
+        if (data.status === "success") {
+            setIsDialogOpen(false)
+            queryClient.invalidateQueries({ queryKey: ["users"] })
+            toast.success('User password has been reset')
+        }
+    } catch (error) {
+
+    }
+}
+
+const editDefaultValues = (user: Users) => ({
+    id: user.id,
+    username: user.username,
+    email: user.email,
+    role: user.role,
+});
+
+export default function InnerUserForm({ action, user }: { action: string, user?: Users }) {
 
     const [isDeleteSubmitting, setIsDeleteSubmitting] = useState<boolean>(false)
     const queryClient = useQueryClient()
-    const form = useForm<CreateValues | EditValues>({
-        resolver: zodResolver((action === "create") ? createSchema : editSchema),
-        defaultValues: {
-            username: user?.username || "",
-            email: user?.email || "",
-            role: user?.role || "",
-            password: "",
-            confirmPassword: "",
-            id: user?.id
-        },
+    const { setIsDialogOpen } = useDialog()
+
+    const createForm = useForm<CreateValues>({resolver: zodResolver(createSchema)})
+    const editForm = useForm<EditValues>({
+        resolver: zodResolver(editSchema),
+        defaultValues: editDefaultValues(user!) // Gunakan fungsi untuk mendapatkan default values
     })
     const resetForm = useForm({
         resolver: zodResolver(resetSchema),
         defaultValues: {
+            id: user?.id ?? "",
             password: "",
         },
     })
 
-    // const [dialogButton, setDialogButton] = useState<JSX.Element | null>(null)
-    // const [dialogContent, setDialogContent] = useState<JSX.Element | null>(null)
     const [showPassword, setShowPassword] = useState<boolean>(false);
 
     return (
         <>
             {action == 'create' && (
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit((values) => handleCreateUser(values, queryClient, setIsDialogOpen, form))} className="space-y-3 text-right">
+                <Form {...createForm}>
+                    <form onSubmit={createForm.handleSubmit((values) => handleCreateUser(values, queryClient, setIsDialogOpen, createForm))} className="space-y-3 text-right">
                         <FormField
-                            control={form.control}
+                            control={createForm.control}
                             name="username"
                             render={({ field }) => (
                                 <FormItem>
@@ -170,7 +202,7 @@ export default function InnerUserForm({ action, user, setIsDialogOpen}: { action
                             )}
                         />
                         <FormField
-                            control={form.control}
+                            control={createForm.control}
                             name="email"
                             render={({ field }) => (
                                 <FormItem>
@@ -182,40 +214,34 @@ export default function InnerUserForm({ action, user, setIsDialogOpen}: { action
                                 </FormItem>
                             )}
                         />
-                        {action == 'create' && (
-                            <>
-                                <FormField
-                                    control={form.control}
-                                    name="password"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Password</FormLabel>
-                                            <FormControl>
-                                                <Input type="password" placeholder="yourPassword" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="confirmPassword"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Confirm Password</FormLabel>
-                                            <FormControl>
-                                                <Input type="password" placeholder="yourPassword" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            </>
-
-                        )}
-
                         <FormField
-                            control={form.control}
+                            control={createForm.control}
+                            name="password"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Password</FormLabel>
+                                    <FormControl>
+                                        <Input type="password" placeholder="yourPassword" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={createForm.control}
+                            name="confirmPassword"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Confirm Password</FormLabel>
+                                    <FormControl>
+                                        <Input type="password" placeholder="yourPassword" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={createForm.control}
                             name="role"
                             render={({ field }) => (
                                 <FormItem>
@@ -238,8 +264,8 @@ export default function InnerUserForm({ action, user, setIsDialogOpen}: { action
                                 </FormItem>
                             )}
                         />
-                        <Button type="submit" disabled={form.formState.isSubmitting} className="mt-2">
-                            {form.formState.isSubmitting ? <Loader2 className='animate-spin' /> : ""}
+                        <Button type="submit" disabled={createForm.formState.isSubmitting} className="mt-2 hover:text-white">
+                            {createForm.formState.isSubmitting ? <Loader2 className='animate-spin' /> : ""}
                             Create user
                         </Button>
                     </form>
@@ -247,10 +273,10 @@ export default function InnerUserForm({ action, user, setIsDialogOpen}: { action
             )}
 
             {action == 'edit' && (
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit((values) => handleUpdateUser(values, queryClient, setIsDialogOpen, form))} className="space-y-3 text-right">
+                <Form {...editForm}>
+                    <form onSubmit={editForm.handleSubmit((values) => handleUpdateUser(values, queryClient, setIsDialogOpen, editForm))} className="space-y-3 text-right">
                         <FormField
-                            control={form.control}
+                            control={editForm.control}
                             name="id"
                             render={({ field }) => (
                                 <FormItem>
@@ -259,7 +285,7 @@ export default function InnerUserForm({ action, user, setIsDialogOpen}: { action
                             )}
                         />
                         <FormField
-                            control={form.control}
+                            control={editForm.control}
                             name="username"
                             render={({ field }) => (
                                 <FormItem>
@@ -272,7 +298,7 @@ export default function InnerUserForm({ action, user, setIsDialogOpen}: { action
                             )}
                         />
                         <FormField
-                            control={form.control}
+                            control={editForm.control}
                             name="email"
                             render={({ field }) => (
                                 <FormItem>
@@ -286,7 +312,7 @@ export default function InnerUserForm({ action, user, setIsDialogOpen}: { action
                         />
 
                         <FormField
-                            control={form.control}
+                            control={editForm.control}
                             name="role"
                             render={({ field }) => (
                                 <FormItem>
@@ -309,20 +335,24 @@ export default function InnerUserForm({ action, user, setIsDialogOpen}: { action
                                 </FormItem>
                             )}
                         />
-                        {/* <Button type="submit" disabled={!form.formState.isDirty} className="mt-2">Update user</Button> */}
-                        <Button type="submit" disabled={form.formState.isSubmitting || !form.formState.isDirty} className="mt-2">
-                            {form.formState.isSubmitting ? <Loader2 className='animate-spin' /> : ""}
-                            Update user
+                        <Button type="submit" disabled={editForm.formState.isSubmitting || !editForm.formState.isDirty} className="mt-2">
+                            {editForm.formState.isSubmitting ? <><Loader2 className='animate-spin' /> Updating...</> : "Update user"}
                         </Button>
                     </form>
                 </Form>
             )}
 
             {action == 'delete' && (
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit((values) => handleUpdateUser(values, queryClient, setIsDialogOpen, form))} className="space-y-3 text-right">
+                <DialogFooter className='text-right'>
+                    <Button variant="destructive" className="mt-2 hover:bg-foreground" disabled={isDeleteSubmitting} type="submit" onClick={(e) => handleDeleteUser(setIsDeleteSubmitting, user!.id, setIsDialogOpen, queryClient)}>  {isDeleteSubmitting ? <Loader2 className='animate-spin' /> : ""} Confirm</Button>
+                </DialogFooter>
+            )}
+
+            {action == 'reset' && (
+                <Form {...resetForm}>
+                    <form onSubmit={resetForm.handleSubmit((values) => handleResetPassword(values, setIsDialogOpen, queryClient))} className="space-y-3 text-right">
                         <FormField
-                            control={form.control}
+                            control={resetForm.control}
                             name="id"
                             render={({ field }) => (
                                 <FormItem>
@@ -330,16 +360,6 @@ export default function InnerUserForm({ action, user, setIsDialogOpen}: { action
                                 </FormItem>
                             )}
                         />
-                    </form>
-                    <DialogFooter className='text-right'>
-                        <Button variant="destructive" className="mt-2" disabled={isDeleteSubmitting} type="submit" onClick={(e) => handleDeleteUser(setIsDeleteSubmitting, e, user?.id, queryClient, setIsDialogOpen)}>  {isDeleteSubmitting ? <Loader2 className='animate-spin' /> : ""} Confirm</Button>
-                    </DialogFooter>
-                </Form>
-            )}
-
-            {action == 'reset' && (
-                <Form {...resetForm}>
-                    <form onSubmit={resetForm.handleSubmit(handleCreateUser)} className="space-y-3 text-right">
                         <FormField
                             control={resetForm.control}
                             name="password"
@@ -369,20 +389,9 @@ export default function InnerUserForm({ action, user, setIsDialogOpen}: { action
                                 </FormItem>
                             )}
                         />
-                        {/* <FormField
-                        control={form.control}
-                        name="passcon"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Email</FormLabel>
-                                <FormControl>
-                                    <Input placeholder="email@example.com" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    /> */}
-                        <Button type="submit" variant="destructive" className="mt-2">Reset Password</Button>
+                        <Button type="submit" disabled={resetForm.formState.isSubmitting} className="mt-2">
+                            {resetForm.formState.isSubmitting ? <><Loader2 className='animate-spin' />Reseting...</> : "Reset Password"}
+                        </Button>
                     </form>
                 </Form>
             )}
