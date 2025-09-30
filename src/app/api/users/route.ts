@@ -6,7 +6,7 @@ import * as bcrypt from 'bcrypt';
 export const GET = auth(async (req) => {
     const users = await prisma.user.findMany({
         select: { id: true, username: true, email: true, role: true },
-        orderBy: { createdAt: 'asc' }
+        orderBy: { createdAt: 'desc' }
     })
 
     return apiSuccess("All users are loaded", users)
