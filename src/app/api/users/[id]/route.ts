@@ -86,6 +86,26 @@ export async function DELETE(req: Request, { params }: Params) {
     const {id} = await params
 
     try {
+        const selectUser = await prisma.user.findUnique({
+            where: { id },
+            select: { id: true, role: true }
+        })
+
+        const countAdmin = await prisma.user.count({
+            where: { role: "admin" }
+        })  
+
+        if (countAdmin <= 1 && selectUser?.role === "admin") { 
+            return NextResponse.json<ApiResponse>({
+                status: "error",
+                msg: "User failed to delete, there must be at least one admin user",
+            })
+        }
+        if (!selectUser) return NextResponse.json<ApiResponse>({
+            status: "error",
+            msg: "User doesn't exists",
+        })
+        
         const deletedUser = await prisma.user.delete({
             where: { id }
         })
