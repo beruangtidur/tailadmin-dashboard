@@ -161,7 +161,16 @@ const handleResetPassword = async (formData: ResetValues, setIsDialogOpen: (open
 const CreateFormComponent = () => {
     const queryClient = useQueryClient()
     const { setIsDialogOpen } = useDialog()
-    const createForm = useForm<CreateValues>({ resolver: zodResolver(createSchema) })
+    const createForm = useForm<CreateValues>({ 
+        resolver: zodResolver(createSchema),
+        defaultValues: {
+            username: "",
+            email: "",
+            role: "user",
+            password: "",
+            confirmPassword: "",
+        }
+    })
 
     return (
         <Form {...createForm}>
