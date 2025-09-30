@@ -155,31 +155,33 @@ const handleResetPassword = async (formData: ResetValues, setIsDialogOpen: (open
     }
 }
 
-const editDefaultValues = (user: Users) => ({
-    id: user.id,
-    username: user.username,
-    email: user.email,
-    role: user.role,
-});
 
 export default function InnerUserForm({ action, user }: { action: string, user?: Users }) {
-
+    
     const [isDeleteSubmitting, setIsDeleteSubmitting] = useState<boolean>(false)
     const queryClient = useQueryClient()
     const { setIsDialogOpen } = useDialog()
+    const editDefaultValues = (user: Users) => ({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+    });
 
-    const createForm = useForm<CreateValues>({resolver: zodResolver(createSchema)})
-    const editForm = useForm<EditValues>({
-        resolver: zodResolver(editSchema),
-        defaultValues: editDefaultValues(user!) // Gunakan fungsi untuk mendapatkan default values
+    const createForm = useForm<CreateValues>({
+        resolver: zodResolver(createSchema),
     })
-    const resetForm = useForm({
+    const editForm =  user? useForm<EditValues>({
+        resolver: zodResolver(editSchema),
+        defaultValues: editDefaultValues(user) // Gunakan fungsi untuk mendapatkan default values
+    }) : null
+    const resetForm = user? useForm({
         resolver: zodResolver(resetSchema),
         defaultValues: {
             id: user?.id ?? "",
             password: "",
         },
-    })
+    }) : null
 
     const [showPassword, setShowPassword] = useState<boolean>(false);
 
