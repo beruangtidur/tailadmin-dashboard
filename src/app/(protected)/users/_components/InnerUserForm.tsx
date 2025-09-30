@@ -1,19 +1,19 @@
 "use client"
 
+import { Button } from '@/components/ui/button'
+import { DialogFooter } from '@/components/ui/dialog'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useDialog } from '@/context/DialogContext'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQueryClient, type QueryClient } from '@tanstack/react-query'
-import React, { useState } from 'react'
+import { Eye, EyeOff, Loader2 } from 'lucide-react'
+import { useState } from 'react'
 import { useForm, type UseFormReturn } from 'react-hook-form'
-import type { Users } from './columns'
-import z from 'zod'
-import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Eye, EyeOff, Loader2, User } from 'lucide-react'
 import { toast } from 'sonner'
-import { DialogFooter } from '@/components/ui/dialog'
-import { useDialog } from '@/context/DialogContext'
+import z from 'zod'
+import type { Users } from './columns'
 
 const createSchema = z.object({
     username: z.string().min(2).max(50),
@@ -66,6 +66,7 @@ const handleCreateUser = async (formData: CreateValues, queryClient: QueryClient
         }
 
     } catch (error) {
+        console.log(error)
 
     }
 }
@@ -99,6 +100,7 @@ const handleUpdateUser = async (formData: EditValues, queryClient: QueryClient, 
             toast.success('User Berhasil diupdate')
         }
     } catch (error) {
+        console.log(error)
 
     }
 }
@@ -125,6 +127,7 @@ const handleDeleteUser = async (setIsSubmittig: (open: boolean) => void, id: str
             toast.success('User Berhasil dihapus')
         }
     } catch (error) {
+        console.log(error)
 
     }
 }
@@ -151,251 +154,279 @@ const handleResetPassword = async (formData: ResetValues, setIsDialogOpen: (open
             toast.success('User password has been reset')
         }
     } catch (error) {
-
+        console.log(error)
     }
 }
 
-
-export default function InnerUserForm({ action, user }: { action: string, user?: Users }) {
-    
-    const [isDeleteSubmitting, setIsDeleteSubmitting] = useState<boolean>(false)
+const CreateFormComponent = () => {
     const queryClient = useQueryClient()
     const { setIsDialogOpen } = useDialog()
-    const editDefaultValues = (user: Users) => ({
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        role: user.role,
-    });
+    const createForm = useForm<CreateValues>({ resolver: zodResolver(createSchema) })
 
-    const createForm = useForm<CreateValues>({
-        resolver: zodResolver(createSchema),
-    })
-    const editForm =  user? useForm<EditValues>({
+    return (
+        <Form {...createForm}>
+            <form onSubmit={createForm.handleSubmit((values) => handleCreateUser(values, queryClient, setIsDialogOpen, createForm))} className="space-y-3 text-right">
+                <FormField
+                    control={createForm.control}
+                    name="username"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Username</FormLabel>
+                            <FormControl>
+                                <Input placeholder="yourUsername" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={createForm.control}
+                    name="email"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Email</FormLabel>
+                            <FormControl>
+                                <Input placeholder="email@example.com" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={createForm.control}
+                    name="password"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Password</FormLabel>
+                            <FormControl>
+                                <Input type="password" placeholder="yourPassword" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={createForm.control}
+                    name="confirmPassword"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Confirm Password</FormLabel>
+                            <FormControl>
+                                <Input type="password" placeholder="yourPassword" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={createForm.control}
+                    name="role"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Role</FormLabel>
+                            <FormControl>
+                                <Select
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
+                                >
+                                    <SelectTrigger className="w-[180px]">
+                                        <SelectValue placeholder="Select role" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="admin">Admin</SelectItem>
+                                        <SelectItem value="user">User</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <Button type="submit" disabled={createForm.formState.isSubmitting} className="mt-2 hover:text-white">
+                    {createForm.formState.isSubmitting ? <Loader2 className='animate-spin' /> : ""}
+                    Create user
+                </Button>
+            </form>
+        </Form>
+    )
+}
+
+const EditFormComponent = ({ user }: { user: Users }) => {
+    const queryClient = useQueryClient()
+    const { setIsDialogOpen } = useDialog()
+    const editForm = useForm<EditValues>({
         resolver: zodResolver(editSchema),
-        defaultValues: editDefaultValues(user) // Gunakan fungsi untuk mendapatkan default values
-    }) : null
-    const resetForm = user? useForm({
+        defaultValues: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            role: user.role,
+        }
+    })
+    return (
+        <Form {...editForm}>
+            <form onSubmit={editForm.handleSubmit((values) => handleUpdateUser(values, queryClient, setIsDialogOpen, editForm))} className="space-y-3 text-right">
+                <FormField
+                    control={editForm.control}
+                    name="id"
+                    render={({ field }) => (
+                        <FormItem>
+                            <Input type="hidden"  {...field} />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={editForm.control}
+                    name="username"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Username</FormLabel>
+                            <FormControl>
+                                <Input placeholder="yourUsername" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={editForm.control}
+                    name="email"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Email</FormLabel>
+                            <FormControl>
+                                <Input placeholder="email@example.com" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={editForm.control}
+                    name="role"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Role</FormLabel>
+                            <FormControl>
+                                <Select
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
+                                >
+                                    <SelectTrigger className="w-[180px]">
+                                        <SelectValue placeholder="Select role" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="admin">Admin</SelectItem>
+                                        <SelectItem value="user">User</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <Button type="submit" disabled={editForm.formState.isSubmitting || !editForm.formState.isDirty} className="mt-2">
+                    {editForm.formState.isSubmitting ? <><Loader2 className='animate-spin' /> Updating...</> : "Update user"}
+                </Button>
+            </form>
+        </Form>
+
+    )
+}
+
+const ResetFormComponent = ({ user }: { user: Users }) => {
+    const [showPassword, setShowPassword] = useState<boolean>(false);
+    const queryClient = useQueryClient()
+    const { setIsDialogOpen } = useDialog()
+
+    const resetForm = useForm({
         resolver: zodResolver(resetSchema),
         defaultValues: {
             id: user?.id ?? "",
             password: "",
         },
-    }) : null
+    })
 
-    const [showPassword, setShowPassword] = useState<boolean>(false);
+    return (
+        <Form {...resetForm}>
+            <form onSubmit={resetForm.handleSubmit((values) => handleResetPassword(values, setIsDialogOpen, queryClient))} className="space-y-3 text-right">
+                <FormField
+                    control={resetForm.control}
+                    name="id"
+                    render={({ field }) => (
+                        <FormItem>
+                            <Input type="hidden"  {...field} />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={resetForm.control}
+                    name="password"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>New password</FormLabel>
+                            <FormControl>
+                                <div className="relative">
+                                    <Input type={showPassword ? 'text' : 'password'} placeholder="yourNewPassword" {...field} className='relative' />
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => setShowPassword((prev) => !prev)}
+                                        className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                                    >
+                                        {showPassword ? (
+                                            <EyeOff className="h-4 w-4 text-gray-500" />
+                                        ) : (
+                                            <Eye className="h-4 w-4 text-gray-500" />
+                                        )}
+                                    </Button>
 
+                                </div>
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <Button type="submit" disabled={resetForm.formState.isSubmitting} className="mt-2">
+                    {resetForm.formState.isSubmitting ? <><Loader2 className='animate-spin' />Reseting...</> : "Reset Password"}
+                </Button>
+            </form>
+        </Form>
+    )
+}
+
+const DeleteFormComponent = ({ user }: { user: Users }) => {
+    const [isDeleteSubmitting, setIsDeleteSubmitting] = useState<boolean>(false)
+    const queryClient = useQueryClient()
+    const { setIsDialogOpen } = useDialog()
+
+    return (
+        <DialogFooter className='text-right'>
+            <Button variant="destructive" className="mt-2 hover:bg-foreground" disabled={isDeleteSubmitting} type="submit" onClick={() => handleDeleteUser(setIsDeleteSubmitting, user!.id, setIsDialogOpen, queryClient)}>  {isDeleteSubmitting ? <Loader2 className='animate-spin' /> : ""} Confirm</Button>
+        </DialogFooter>
+
+    )
+}
+
+export default function InnerUserForm({ action, user }: { action: string, user?: Users }) {
     return (
         <>
             {action == 'create' && (
-                <Form {...createForm}>
-                    <form onSubmit={createForm.handleSubmit((values) => handleCreateUser(values, queryClient, setIsDialogOpen, createForm))} className="space-y-3 text-right">
-                        <FormField
-                            control={createForm.control}
-                            name="username"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Username</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="yourUsername" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={createForm.control}
-                            name="email"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Email</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="email@example.com" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={createForm.control}
-                            name="password"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Password</FormLabel>
-                                    <FormControl>
-                                        <Input type="password" placeholder="yourPassword" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={createForm.control}
-                            name="confirmPassword"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Confirm Password</FormLabel>
-                                    <FormControl>
-                                        <Input type="password" placeholder="yourPassword" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={createForm.control}
-                            name="role"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Role</FormLabel>
-                                    <FormControl>
-                                        <Select
-                                            onValueChange={field.onChange}
-                                            defaultValue={field.value}
-                                        >
-                                            <SelectTrigger className="w-[180px]">
-                                                <SelectValue placeholder="Select role" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="admin">Admin</SelectItem>
-                                                <SelectItem value="user">User</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <Button type="submit" disabled={createForm.formState.isSubmitting} className="mt-2 hover:text-white">
-                            {createForm.formState.isSubmitting ? <Loader2 className='animate-spin' /> : ""}
-                            Create user
-                        </Button>
-                    </form>
-                </Form>
+                <CreateFormComponent />
             )}
 
-            {action == 'edit' && (
-                <Form {...editForm}>
-                    <form onSubmit={editForm.handleSubmit((values) => handleUpdateUser(values, queryClient, setIsDialogOpen, editForm))} className="space-y-3 text-right">
-                        <FormField
-                            control={editForm.control}
-                            name="id"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <Input type="hidden"  {...field} />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={editForm.control}
-                            name="username"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Username</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="yourUsername" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={editForm.control}
-                            name="email"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Email</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="email@example.com" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-
-                        <FormField
-                            control={editForm.control}
-                            name="role"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Role</FormLabel>
-                                    <FormControl>
-                                        <Select
-                                            onValueChange={field.onChange}
-                                            defaultValue={field.value}
-                                        >
-                                            <SelectTrigger className="w-[180px]">
-                                                <SelectValue placeholder="Select role" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="admin">Admin</SelectItem>
-                                                <SelectItem value="user">User</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <Button type="submit" disabled={editForm.formState.isSubmitting || !editForm.formState.isDirty} className="mt-2">
-                            {editForm.formState.isSubmitting ? <><Loader2 className='animate-spin' /> Updating...</> : "Update user"}
-                        </Button>
-                    </form>
-                </Form>
+            {action == 'edit' && user && (
+                <EditFormComponent user={user} />
             )}
 
-            {action == 'delete' && (
-                <DialogFooter className='text-right'>
-                    <Button variant="destructive" className="mt-2 hover:bg-foreground" disabled={isDeleteSubmitting} type="submit" onClick={(e) => handleDeleteUser(setIsDeleteSubmitting, user!.id, setIsDialogOpen, queryClient)}>  {isDeleteSubmitting ? <Loader2 className='animate-spin' /> : ""} Confirm</Button>
-                </DialogFooter>
+            {action == 'delete' && user && (
+                <DeleteFormComponent user={user} />
             )}
 
-            {action == 'reset' && (
-                <Form {...resetForm}>
-                    <form onSubmit={resetForm.handleSubmit((values) => handleResetPassword(values, setIsDialogOpen, queryClient))} className="space-y-3 text-right">
-                        <FormField
-                            control={resetForm.control}
-                            name="id"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <Input type="hidden"  {...field} />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={resetForm.control}
-                            name="password"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>New password</FormLabel>
-                                    <FormControl>
-                                        <div className="relative">
-                                            <Input type={showPassword ? 'text' : 'password'} placeholder="yourNewPassword" {...field} className='relative' />
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => setShowPassword((prev) => !prev)}
-                                                className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                                            >
-                                                {showPassword ? (
-                                                    <EyeOff className="h-4 w-4 text-gray-500" />
-                                                ) : (
-                                                    <Eye className="h-4 w-4 text-gray-500" />
-                                                )}
-                                            </Button>
-
-                                        </div>
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <Button type="submit" disabled={resetForm.formState.isSubmitting} className="mt-2">
-                            {resetForm.formState.isSubmitting ? <><Loader2 className='animate-spin' />Reseting...</> : "Reset Password"}
-                        </Button>
-                    </form>
-                </Form>
+            {action == 'reset' && user && (
+                <ResetFormComponent user={user} />
             )}
         </>
     )
