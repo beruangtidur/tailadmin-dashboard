@@ -15,6 +15,7 @@ import DialogFormTrigger from "@/components/dialog/DialogFormTrigger"
 import Checkbox from "@/components/form/input/Checkbox"
 import { Edit, KeyRound, Trash2 } from "lucide-react"
 import InnerUserForm from "./InnerUserForm"
+import Badge from "@/components/ui/badge/Badge"
 
 
 const columns: ColumnDef<Users>[] = [
@@ -44,11 +45,16 @@ const columns: ColumnDef<Users>[] = [
   },
   {
     accessorKey: "email",
-    header: "Email"
+    header: "Email",
   },
   {
     accessorKey: "role",
     header: "Role",
+    cell: ({row}) => {
+      return (
+        (row.original.role === "admin") ? <Badge variant="solid" color="success" size="sm"> Admin </Badge> : <Badge variant="solid" color="info" size="sm">User</Badge>
+      )
+    }
   },
   {
     header: "Action",
