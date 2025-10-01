@@ -18,6 +18,11 @@ AUTH_SECRET=""
 # Database connection (default)
 DATABASE_URL="postgresql://user:pass@localhost:5432/mydb"
 
+### Additional 
+NEXT_PUBLIC_BASE_URL=http://localhost:3000
+NEXT_PUBLIC_SUFFIX_TITLE="| PageName"
+NEXT_PUBLIC_DEFAULT_TITLE="PageTitle"
+
 ### 3. Generate Auth Secret
 
 Jalankan perintah untuk membuat secret key:
